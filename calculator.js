@@ -227,7 +227,7 @@ function getBudgetPhaseSummary(phaseName) {
 
   const categoryTotal = phase.categories.reduce((sum, category) => sum + category.amount, 0);
   const monthlyIncome = Number.isFinite(phase.monthlyIncome) ? phase.monthlyIncome : 0;
-  const savingsAmount = monthlyIncome - phase.budget;
+  const savingsAmount = monthlyIncome - categoryTotal;
   const lastCategory = phase.categories[phase.categories.length - 1];
   const negativeCategory = lastCategory && lastCategory.amount < 0;
   const warning = negativeCategory
@@ -253,11 +253,12 @@ function syncCategoriesToBudget(phaseState, changedIndex, field, value) {
   const lastIndex = phaseState.categories.length - 1;
 
   if (field === 'amount') {
-    const nextAmount = Math.max(0, Math.round(value));
+    const parsedValue = parseFloat(value);
+    const nextAmount = Number.isFinite(parsedValue) ? Math.round(parsedValue) : 0;
     phaseState.categories[changedIndex].amount = nextAmount;
   } else {
-    const nextPercent = Math.max(0, parseFloat(value));
-    const percentValue = Number.isFinite(nextPercent) ? nextPercent : 0;
+    const nextPercent = parseFloat(value);
+    const percentValue = Number.isFinite(nextPercent) ? Math.max(0, nextPercent) : 0;
     phaseState.categories[changedIndex].amount = totalBudget > 0 ? Math.round((percentValue / 100) * totalBudget) : 0;
     phaseState.categories[changedIndex].percentage = percentValue;
   }
@@ -292,7 +293,7 @@ function addBudgetCategory(phaseName) {
   const totalAllocated = phase.categories.reduce((sum, category) => sum + category.amount, 0);
   const adjustment = phase.budget - totalAllocated;
   if (phase.categories.length && adjustment !== 0) {
-    const targetIndex = phase.categories.length > 1 ? phase.categories.length - 2 : phase.categories.length - 1;
+    const targetIndex = phase.categories.length - 1;
     phase.categories[targetIndex].amount += adjustment;
     phase.categories[targetIndex].percentage = phase.budget > 0 ? (phase.categories[targetIndex].amount / phase.budget) * 100 : 0;
   }
@@ -305,11 +306,8 @@ function removeBudgetCategory(phaseName, index) {
   const removedAmount = phase.categories[index].amount;
   phase.categories.splice(index, 1);
   if (phase.categories.length) {
-    const otherTotal = phase.categories.reduce((sum, category) => sum + category.amount, 0);
-    const remainingBudget = Math.max(0, phase.budget - otherTotal);
-    if (remainingBudget > 0) {
-      phase.categories[phase.categories.length - 1].amount += remainingBudget;
-    }
+    const lastIndex = phase.categories.length - 1;
+    phase.categories[lastIndex].amount += removedAmount;
     phase.categories.forEach(category => {
       category.percentage = phase.budget > 0 ? (category.amount / phase.budget) * 100 : 0;
     });
@@ -356,7 +354,7 @@ function syncBudgetStateToInputs(p) {
 
     const scale = totalBudget / totalExisting;
     categories.forEach(category => {
-      category.amount = Math.max(0, Math.round(category.amount * scale));
+      category.amount = Math.round(category.amount * scale);
       category.percentage = (category.amount / totalBudget) * 100;
     });
 
@@ -370,11 +368,20 @@ function syncBudgetStateToInputs(p) {
   return nextState;
 }
 
+function setBudgetControlsEnabled(isEnabled) {
+  const select = document.getElementById('budgetPhaseSelect');
+  const addButton = document.getElementById('addBudgetCategoryBtn');
+  if (select) select.disabled = !isEnabled;
+  if (addButton) addButton.disabled = !isEnabled;
+}
+
 function renderBudgetAllocation(p) {
   if (!budgetState) {
     if (!p) return;
     budgetState = buildBudgetState(p);
   }
+
+  setBudgetControlsEnabled(true);
 
   const select = document.getElementById('budgetPhaseSelect');
   const phaseNames = Object.keys(budgetState.phases);
@@ -389,7 +396,7 @@ function renderBudgetAllocation(p) {
   const rows = phase.categories.map((category, index) => `
     <div class="budget-category-row" data-index="${index}">
       <input class="budget-name-input" type="text" value="${escapeHtml(category.name)}" data-field="name" />
-      <input class="budget-amount-input" type="number" min="0" step="1" value="${Math.round(category.amount)}" data-field="amount" />
+      <input class="budget-amount-input" type="number" step="1" value="${Math.round(category.amount)}" data-field="amount" />
       <input class="budget-percent-input" type="number" min="0" max="100" step="0.1" value="${category.percentage.toFixed(1)}" data-field="percent" />
       <button type="button" class="btn-remove-category" data-index="${index}">Remove</button>
     </div>`).join('');
@@ -400,20 +407,25 @@ function renderBudgetAllocation(p) {
   warningEl.textContent = warning;
   warningEl.classList.toggle('hidden', !warning);
 
-  if (budgetChartInstance) budgetChartInstance.destroy();
-  const chartCtx = document.getElementById('budgetChart').getContext('2d');
   const chartLabels = phase.categories.map(category => category.name);
   const chartData = phase.categories.map(category => Math.max(0, category.amount));
   const chartColors = getBudgetChartColors(phase.categories.length);
-  const chartSavingsAmount = Math.max(0, phase.monthlyIncome - phase.budget);
+  const chartSavingsAmount = Math.max(0, summary.savingsAmount);
 
   if (chartSavingsAmount > 0) {
     chartLabels.push('Savings');
     chartData.push(chartSavingsAmount);
-    chartColors.push('#38a169');
+    chartColors.push('#f59e0b');
   }
 
-  budgetChartInstance = new Chart(chartCtx, {
+  const chartCtx = document.getElementById('budgetChart').getContext('2d');
+  if (budgetChartInstance) {
+    budgetChartInstance.data.labels = chartLabels;
+    budgetChartInstance.data.datasets[0].data = chartData;
+    budgetChartInstance.data.datasets[0].backgroundColor = chartColors;
+    budgetChartInstance.update();
+  } else {
+    budgetChartInstance = new Chart(chartCtx, {
     type: 'doughnut',
     data: {
       labels: chartLabels,
@@ -432,6 +444,8 @@ function renderBudgetAllocation(p) {
       },
     },
   });
+  }
+
 }
 
 function handleBudgetPhaseChange(event) {
@@ -566,12 +580,21 @@ function renderPhases(phases) {
   container.innerHTML = `<h3>Phase Breakdown</h3>${rows.join('')}`;
 }
 
-document.getElementById('budgetPhaseSelect').addEventListener('change', handleBudgetPhaseChange);
-document.getElementById('addBudgetCategoryBtn').addEventListener('click', function () {
-  addBudgetCategory(budgetState ? budgetState.selectedPhase : 'Current Career');
-});
-document.getElementById('budgetCategoryRows').addEventListener('change', handleBudgetCategoryInput);
-document.getElementById('budgetCategoryRows').addEventListener('click', handleBudgetCategoryClick);
+function initializeBudgetUI() {
+  setBudgetControlsEnabled(false);
+  document.getElementById('budgetPhaseSelect').addEventListener('change', handleBudgetPhaseChange);
+  document.getElementById('addBudgetCategoryBtn').addEventListener('click', function () {
+    addBudgetCategory(budgetState ? budgetState.selectedPhase : 'Current Career');
+  });
+  document.getElementById('budgetCategoryRows').addEventListener('input', handleBudgetCategoryInput);
+  document.getElementById('budgetCategoryRows').addEventListener('click', handleBudgetCategoryClick);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeBudgetUI);
+} else {
+  initializeBudgetUI();
+}
 
 function renderYearlyPlan(yearlyPlan) {
   const body = document.getElementById('yearlyPlanTableBody');
@@ -606,7 +629,7 @@ document.getElementById('fireForm').addEventListener('submit', function (e) {
   renderChart(years, assets, phases);
   renderPhases(phases);
   budgetState = syncBudgetStateToInputs(p);
-  renderBudgetAllocation(p);
+  renderBudgetAllocation();
   renderYearlyPlan(yearlyPlan);
 
   resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
