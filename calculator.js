@@ -165,12 +165,6 @@ function renderSummary(p, assets, years) {
 function renderChart(years, assets, phases) {
   const ctx = document.getElementById('projectionChart').getContext('2d');
 
-  // Build gradient fill segments per phase
-  const pointColors = years.map(age => {
-    const ph = phases.find(p => age >= p.startAge && age < p.endAge);
-    return ph ? ph.color : phases[phases.length - 1].color;
-  });
-
   if (chartInstance) chartInstance.destroy();
 
   chartInstance = new Chart(ctx, {
@@ -180,12 +174,12 @@ function renderChart(years, assets, phases) {
       datasets: [{
         label: 'Portfolio Value ($)',
         data: assets,
-        borderColor: '#ed8936',
-        backgroundColor: 'rgba(237,137,54,0.10)',
-        borderWidth: 2.5,
-        pointRadius: 3,
-        pointHoverRadius: 5,
-        pointBackgroundColor: pointColors,
+        borderColor: '#111',
+        backgroundColor: 'rgba(0,0,0,0.04)',
+        borderWidth: 1.5,
+        pointRadius: 2,
+        pointHoverRadius: 4,
+        pointBackgroundColor: '#111',
         tension: 0.3,
         fill: true,
       }],
@@ -223,9 +217,9 @@ function renderPhases(phases) {
   const rows = phases.map(ph => {
     const monthlyNet = ph.monthlyIncome - ph.monthlyExpenses;
     const tag = monthlyNet >= 0 ? '↑ Saving' : '↓ Drawing down';
-    const cls = monthlyNet >= 0 ? 'color:#276749' : 'color:#822727';
+    const cls = monthlyNet >= 0 ? 'color:#1a7a4a' : 'color:#c00';
     return `
-      <div class="phase-row" style="border-left:4px solid ${ph.color}">
+      <div class="phase-row">
         <span class="phase-name">${ph.name}</span>
         <span class="phase-range">Age ${ph.startAge}–${ph.endAge - 1}</span>
         <span class="phase-net" style="${cls}">${tag} ${fmt(Math.abs(monthlyNet))}/mo</span>

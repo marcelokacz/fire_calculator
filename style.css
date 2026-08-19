@@ -1,210 +1,142 @@
-/* ===== Reset & Base ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: #f0f4f8;
-  color: #1a202c;
-  min-height: 100vh;
+  font-family: system-ui, sans-serif;
+  background: #fff;
+  color: #111;
   padding: 2rem 1rem;
 }
 
-/* ===== Layout ===== */
-.container {
-  max-width: 900px;
-  margin: 0 auto;
-}
+.container { max-width: 860px; margin: 0 auto; }
 
-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
+header { margin-bottom: 2rem; }
+header h1 { font-size: 1.6rem; font-weight: 700; }
+header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
 
-header h1 {
-  font-size: 2.4rem;
-  font-weight: 800;
-  color: #c05621;
-}
-
-header .subtitle {
-  margin-top: 0.3rem;
-  color: #718096;
-  font-size: 1.05rem;
-}
-
-/* ===== Card ===== */
+/* Sections */
 .card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.8rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .card h2 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #c05621;
-  margin-bottom: 1.2rem;
-  border-bottom: 2px solid #fed7aa;
-  padding-bottom: 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-/* ===== Grid of inputs ===== */
+/* Inputs */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.2rem;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1rem;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
+.field { display: flex; flex-direction: column; gap: 0.3rem; }
 
 .field label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #4a5568;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-size: 0.8rem;
+  color: #555;
 }
 
 .field input {
-  padding: 0.55rem 0.75rem;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color .2s;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
   width: 100%;
 }
 
 .field input:focus {
   outline: none;
-  border-color: #ed8936;
-  box-shadow: 0 0 0 3px rgba(237,137,54,.15);
+  border-color: #555;
 }
 
-.field input.invalid {
-  border-color: #e53e3e;
-}
-
-/* ===== Error ===== */
+/* Error */
 .error-msg {
-  color: #e53e3e;
-  font-size: 0.9rem;
-  font-weight: 600;
-  min-height: 1.2rem;
-  margin-bottom: 0.8rem;
-  text-align: center;
+  color: #c00;
+  font-size: 0.85rem;
+  min-height: 1.1rem;
+  margin-bottom: 0.75rem;
 }
 
-/* ===== Button ===== */
+/* Button */
 .btn-calculate {
   display: block;
   width: 100%;
-  padding: 0.85rem;
-  background: linear-gradient(135deg, #ed8936, #c05621);
+  padding: 0.7rem;
+  background: #111;
   color: #fff;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 600;
   border: none;
-  border-radius: 10px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: opacity .2s, transform .15s;
-  letter-spacing: 0.03em;
 }
 
-.btn-calculate:hover { opacity: 0.93; transform: translateY(-1px); }
-.btn-calculate:active { transform: translateY(0); }
+.btn-calculate:hover { background: #333; }
 
-/* ===== Results ===== */
+/* Results */
 .hidden { display: none !important; }
 
-.results h2 {
-  font-size: 1.4rem;
-  color: #276749;
-  border-bottom-color: #9ae6b4;
-}
+.results h2 { font-size: 1rem; font-weight: 600; color: #444; }
 
-/* Summary cards */
+/* Summary */
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.8rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
 }
 
 .summary-item {
-  background: #f7fafc;
-  border-radius: 10px;
-  padding: 1rem 1.2rem;
-  border-left: 4px solid;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.2rem;
 }
 
-.summary-item .label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #718096;
-}
+.summary-item .label { font-size: 0.75rem; color: #666; }
+.summary-item .value { font-size: 1.1rem; font-weight: 700; }
 
-.summary-item .value {
-  font-size: 1.25rem;
-  font-weight: 800;
-}
-
-.summary-item.positive { border-color: #38a169; }
-.summary-item.positive .value { color: #276749; }
-.summary-item.warning  { border-color: #d69e2e; }
-.summary-item.warning  .value { color: #744210; }
-.summary-item.danger   { border-color: #e53e3e; }
-.summary-item.danger   .value { color: #822727; }
-.summary-item.info     { border-color: #3182ce; }
-.summary-item.info     .value { color: #1a365d; }
+.summary-item.positive .value { color: #1a7a4a; }
+.summary-item.warning  .value { color: #8a6800; }
+.summary-item.danger   .value { color: #c00; }
+.summary-item.info     .value { color: #1a4a8a; }
 
 /* Chart */
 .chart-wrapper {
   position: relative;
-  height: 380px;
-  margin-bottom: 1.8rem;
+  height: 340px;
+  margin-bottom: 1.5rem;
 }
 
-/* Phases detail */
-.phases h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #2d3748;
-  margin-bottom: 0.8rem;
-}
+/* Phases */
+.phases h3 { font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
 
 .phase-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 0.8rem;
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
-  background: #f7fafc;
-  font-size: 0.92rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
   gap: 1rem;
   flex-wrap: wrap;
 }
 
-.phase-row .phase-name {
-  font-weight: 700;
-  min-width: 140px;
-}
-
-.phase-row .phase-range { color: #718096; font-size: 0.83rem; }
-.phase-row .phase-net   { font-weight: 600; }
+.phase-row:last-child { border-bottom: none; }
+.phase-row .phase-name { font-weight: 600; min-width: 130px; }
+.phase-row .phase-range { color: #888; font-size: 0.82rem; }
+.phase-row .phase-net { font-weight: 600; }
 
 @media (max-width: 540px) {
-  header h1 { font-size: 1.8rem; }
   .grid { grid-template-columns: 1fr 1fr; }
 }
