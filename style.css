@@ -190,7 +190,7 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
 
 .budget-layout {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) 1fr;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   gap: 1rem;
 }
 
@@ -203,6 +203,8 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .budget-category-rows {
@@ -213,9 +215,10 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
 
 .budget-category-row {
   display: grid;
-  grid-template-columns: 1.1fr 0.8fr 0.7fr auto;
-  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr) 84px 74px auto;
+  gap: 0.4rem;
   align-items: center;
+  min-width: 0;
 }
 
 .budget-category-row input {
@@ -223,6 +226,7 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 0.9rem;
+  min-width: 0;
 }
 
 .btn-add-category,
@@ -245,12 +249,15 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
   flex-direction: column;
   gap: 0.35rem;
   padding-top: 0.25rem;
+  width: 100%;
 }
 
 .budget-summary-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   font-size: 0.9rem;
   color: #444;
 }
@@ -316,6 +323,10 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
 .yearly-plan-table .amount-positive { color: #1a7a4a; font-weight: 600; }
 .yearly-plan-table .amount-negative { color: #c00; font-weight: 600; }
 .yearly-plan-table .manual-cell { min-width: 140px; border-left: 1px dashed #ddd; }
+
+@media (max-width: 700px) {
+  .budget-layout { grid-template-columns: 1fr; }
+}
 
 @media (max-width: 540px) {
   .grid { grid-template-columns: 1fr 1fr; }

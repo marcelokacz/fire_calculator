@@ -228,9 +228,15 @@ function getBudgetPhaseSummary(phaseName) {
   const categoryTotal = phase.categories.reduce((sum, category) => sum + category.amount, 0);
   const monthlyIncome = Number.isFinite(phase.monthlyIncome) ? phase.monthlyIncome : 0;
   const savingsAmount = monthlyIncome - phase.budget;
-  const warning = categoryTotal > phase.budget || savingsAmount < 0
-    ? (categoryTotal > phase.budget ? 'Category totals exceed the available budget.' : 'This phase is spending more than its monthly income.')
-    : '';
+  const lastCategory = phase.categories[phase.categories.length - 1];
+  const negativeCategory = lastCategory && lastCategory.amount < 0;
+  const warning = negativeCategory
+    ? 'The remaining budget for the last category is negative. Reduce the edited amount to stay within the budget.'
+    : categoryTotal > phase.budget
+      ? 'Category totals exceed the available budget.'
+      : savingsAmount < 0
+        ? 'This phase is spending more than its monthly income.'
+        : '';
 
   return { phase, categoryTotal, savingsAmount, warning };
 }
@@ -244,88 +250,30 @@ function syncCategoriesToBudget(phaseState, changedIndex, field, value) {
     return;
   }
 
+  const lastIndex = phaseState.categories.length - 1;
+
   if (field === 'amount') {
     const nextAmount = Math.max(0, Math.round(value));
     phaseState.categories[changedIndex].amount = nextAmount;
   } else {
     const nextPercent = Math.max(0, parseFloat(value));
-    phaseState.categories[changedIndex].percentage = Number.isFinite(nextPercent) ? nextPercent : 0;
+    const percentValue = Number.isFinite(nextPercent) ? nextPercent : 0;
+    phaseState.categories[changedIndex].amount = totalBudget > 0 ? Math.round((percentValue / 100) * totalBudget) : 0;
+    phaseState.categories[changedIndex].percentage = percentValue;
   }
 
-  if (field === 'amount') {
-    const otherTotal = phaseState.categories.reduce((sum, category, index) => {
-      return sum + (index === changedIndex ? 0 : category.amount);
-    }, 0);
-    const targetOtherTotal = Math.max(0, totalBudget - phaseState.categories[changedIndex].amount);
-    const otherIndices = phaseState.categories.map((_, index) => index).filter(index => index !== changedIndex);
-
-    if (otherIndices.length) {
-      let remaining = targetOtherTotal;
-      if (otherTotal > 0) {
-        otherIndices.forEach(index => {
-          const share = phaseState.categories[index].amount / otherTotal;
-          const adjustedAmount = Math.round(targetOtherTotal * share);
-          phaseState.categories[index].amount = adjustedAmount;
-          remaining -= adjustedAmount;
-        });
-      } else {
-        const base = Math.floor(targetOtherTotal / otherIndices.length);
-        otherIndices.forEach((index, idx) => {
-          phaseState.categories[index].amount = idx === otherIndices.length - 1
-            ? targetOtherTotal - base * (otherIndices.length - 1)
-            : base;
-        });
-        remaining = 0;
-      }
-
-      if (remaining !== 0) {
-        phaseState.categories[otherIndices[otherIndices.length - 1]].amount += remaining;
-      }
-    } else {
-      phaseState.categories[changedIndex].amount = totalBudget;
-    }
-  } else {
-    const totalPercent = phaseState.categories.reduce((sum, category, index) => {
-      return sum + (index === changedIndex ? 0 : category.percentage);
-    }, 0) + phaseState.categories[changedIndex].percentage;
-    const normalizedPercent = totalPercent > 0 ? phaseState.categories[changedIndex].percentage / totalPercent : 0;
-    const scaledBudget = totalBudget * normalizedPercent;
-    phaseState.categories[changedIndex].amount = Math.round(scaledBudget);
-
-    const otherIndices = phaseState.categories.map((_, index) => index).filter(index => index !== changedIndex);
-    const remainingBudget = Math.max(0, totalBudget - phaseState.categories[changedIndex].amount);
-    const otherTotalPercent = otherIndices.reduce((sum, index) => sum + phaseState.categories[index].percentage, 0);
-
-    if (otherIndices.length) {
-      let remaining = remainingBudget;
-      if (otherTotalPercent > 0) {
-        otherIndices.forEach(index => {
-          const share = phaseState.categories[index].percentage / otherTotalPercent;
-          const adjustedAmount = Math.round(remainingBudget * share);
-          phaseState.categories[index].amount = adjustedAmount;
-          remaining -= adjustedAmount;
-        });
-      } else {
-        const base = Math.floor(remainingBudget / otherIndices.length);
-        otherIndices.forEach((index, idx) => {
-          const amount = idx === otherIndices.length - 1
-            ? remainingBudget - base * (otherIndices.length - 1)
-            : base;
-          phaseState.categories[index].amount = amount;
-          remaining -= amount;
-        });
-      }
-
-      if (remaining !== 0) {
-        phaseState.categories[otherIndices[otherIndices.length - 1]].amount += remaining;
-      }
-    }
+  if (changedIndex === lastIndex) {
+    phaseState.categories.forEach(category => {
+      category.percentage = totalBudget > 0 ? (category.amount / totalBudget) * 100 : 0;
+    });
+    return;
   }
 
-  const totalAllocated = phaseState.categories.reduce((sum, category) => sum + category.amount, 0);
-  if (phaseState.categories.length) {
-    phaseState.categories[phaseState.categories.length - 1].amount += totalBudget - totalAllocated;
-  }
+  const nonLastTotal = phaseState.categories.reduce((sum, category, index) => {
+    return sum + (index === changedIndex || index === lastIndex ? 0 : category.amount);
+  }, 0);
+  const lastAmount = totalBudget - nonLastTotal - phaseState.categories[changedIndex].amount;
+  phaseState.categories[lastIndex].amount = lastAmount;
 
   phaseState.categories.forEach(category => {
     category.percentage = totalBudget > 0 ? (category.amount / totalBudget) * 100 : 0;
