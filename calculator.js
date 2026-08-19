@@ -454,13 +454,24 @@ function renderBudgetAllocation(p) {
 
   if (budgetChartInstance) budgetChartInstance.destroy();
   const chartCtx = document.getElementById('budgetChart').getContext('2d');
+  const chartLabels = phase.categories.map(category => category.name);
+  const chartData = phase.categories.map(category => Math.max(0, category.amount));
+  const chartColors = getBudgetChartColors(phase.categories.length);
+  const chartSavingsAmount = Math.max(0, phase.monthlyIncome - phase.budget);
+
+  if (chartSavingsAmount > 0) {
+    chartLabels.push('Savings');
+    chartData.push(chartSavingsAmount);
+    chartColors.push('#38a169');
+  }
+
   budgetChartInstance = new Chart(chartCtx, {
     type: 'pie',
     data: {
-      labels: phase.categories.map(category => category.name),
+      labels: chartLabels,
       datasets: [{
-        data: phase.categories.map(category => Math.max(0, category.amount)),
-        backgroundColor: getBudgetChartColors(phase.categories.length),
+        data: chartData,
+        backgroundColor: chartColors,
         borderWidth: 1,
       }],
     },
