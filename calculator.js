@@ -457,11 +457,11 @@ function renderBudgetAllocation(p) {
   const chartLabels = phase.categories.map(category => category.name);
   const chartData = phase.categories.map(category => Math.max(0, category.amount));
   const chartColors = getBudgetChartColors(phase.categories.length);
-  const savingsAmount = Math.max(0, phase.monthlyIncome - phase.budget);
+  const chartSavingsAmount = Math.max(0, phase.monthlyIncome - phase.budget);
 
-  if (savingsAmount > 0) {
+  if (chartSavingsAmount > 0) {
     chartLabels.push('Savings');
-    chartData.push(savingsAmount);
+    chartData.push(chartSavingsAmount);
     chartColors.push('#38a169');
   }
 
