@@ -228,9 +228,15 @@ function getBudgetPhaseSummary(phaseName) {
   const categoryTotal = phase.categories.reduce((sum, category) => sum + category.amount, 0);
   const monthlyIncome = Number.isFinite(phase.monthlyIncome) ? phase.monthlyIncome : 0;
   const savingsAmount = monthlyIncome - phase.budget;
-  const warning = categoryTotal > phase.budget || savingsAmount < 0
-    ? (categoryTotal > phase.budget ? 'Category totals exceed the available budget.' : 'This phase is spending more than its monthly income.')
+  const lastCategory = phase.categories[phase.categories.length - 1];
+  const lastCategoryWarning = lastCategory && lastCategory.amount < 0
+    ? 'The last category would need to go negative to stay within budget.'
     : '';
+  const warning = lastCategoryWarning || (categoryTotal > phase.budget
+    ? 'Category totals exceed the available budget.'
+    : savingsAmount < 0
+      ? 'This phase is spending more than its monthly income.'
+      : '');
 
   return { phase, categoryTotal, savingsAmount, warning };
 }
@@ -244,126 +250,75 @@ function syncCategoriesToBudget(phaseState, changedIndex, field, value) {
     return;
   }
 
+  const categories = phaseState.categories.map(category => ({ ...category }));
+  const changedCategory = categories[changedIndex];
+  if (!changedCategory) return;
+
   if (field === 'amount') {
-    const nextAmount = Math.max(0, Math.round(value));
-    phaseState.categories[changedIndex].amount = nextAmount;
+    changedCategory.amount = Math.max(0, Math.round(value));
   } else {
     const nextPercent = Math.max(0, parseFloat(value));
-    phaseState.categories[changedIndex].percentage = Number.isFinite(nextPercent) ? nextPercent : 0;
+    changedCategory.amount = Number.isFinite(nextPercent)
+      ? Math.round(totalBudget * (nextPercent / 100))
+      : 0;
   }
 
-  if (field === 'amount') {
-    const otherTotal = phaseState.categories.reduce((sum, category, index) => {
-      return sum + (index === changedIndex ? 0 : category.amount);
+  if (categories.length > 1) {
+    const lastIndex = categories.length - 1;
+    const totalExceptLast = categories.reduce((sum, category, index) => {
+      return sum + (index === lastIndex ? 0 : category.amount);
     }, 0);
-    const targetOtherTotal = Math.max(0, totalBudget - phaseState.categories[changedIndex].amount);
-    const otherIndices = phaseState.categories.map((_, index) => index).filter(index => index !== changedIndex);
-
-    if (otherIndices.length) {
-      let remaining = targetOtherTotal;
-      if (otherTotal > 0) {
-        otherIndices.forEach(index => {
-          const share = phaseState.categories[index].amount / otherTotal;
-          const adjustedAmount = Math.round(targetOtherTotal * share);
-          phaseState.categories[index].amount = adjustedAmount;
-          remaining -= adjustedAmount;
-        });
-      } else {
-        const base = Math.floor(targetOtherTotal / otherIndices.length);
-        otherIndices.forEach((index, idx) => {
-          phaseState.categories[index].amount = idx === otherIndices.length - 1
-            ? targetOtherTotal - base * (otherIndices.length - 1)
-            : base;
-        });
-        remaining = 0;
-      }
-
-      if (remaining !== 0) {
-        phaseState.categories[otherIndices[otherIndices.length - 1]].amount += remaining;
-      }
-    } else {
-      phaseState.categories[changedIndex].amount = totalBudget;
-    }
+    categories[lastIndex].amount = totalBudget - totalExceptLast;
   } else {
-    const totalPercent = phaseState.categories.reduce((sum, category, index) => {
-      return sum + (index === changedIndex ? 0 : category.percentage);
-    }, 0) + phaseState.categories[changedIndex].percentage;
-    const normalizedPercent = totalPercent > 0 ? phaseState.categories[changedIndex].percentage / totalPercent : 0;
-    const scaledBudget = totalBudget * normalizedPercent;
-    phaseState.categories[changedIndex].amount = Math.round(scaledBudget);
-
-    const otherIndices = phaseState.categories.map((_, index) => index).filter(index => index !== changedIndex);
-    const remainingBudget = Math.max(0, totalBudget - phaseState.categories[changedIndex].amount);
-    const otherTotalPercent = otherIndices.reduce((sum, index) => sum + phaseState.categories[index].percentage, 0);
-
-    if (otherIndices.length) {
-      let remaining = remainingBudget;
-      if (otherTotalPercent > 0) {
-        otherIndices.forEach(index => {
-          const share = phaseState.categories[index].percentage / otherTotalPercent;
-          const adjustedAmount = Math.round(remainingBudget * share);
-          phaseState.categories[index].amount = adjustedAmount;
-          remaining -= adjustedAmount;
-        });
-      } else {
-        const base = Math.floor(remainingBudget / otherIndices.length);
-        otherIndices.forEach((index, idx) => {
-          const amount = idx === otherIndices.length - 1
-            ? remainingBudget - base * (otherIndices.length - 1)
-            : base;
-          phaseState.categories[index].amount = amount;
-          remaining -= amount;
-        });
-      }
-
-      if (remaining !== 0) {
-        phaseState.categories[otherIndices[otherIndices.length - 1]].amount += remaining;
-      }
-    }
+    categories[0].amount = totalBudget;
   }
 
-  const totalAllocated = phaseState.categories.reduce((sum, category) => sum + category.amount, 0);
-  if (phaseState.categories.length) {
-    phaseState.categories[phaseState.categories.length - 1].amount += totalBudget - totalAllocated;
-  }
-
-  phaseState.categories.forEach(category => {
+  categories.forEach(category => {
     category.percentage = totalBudget > 0 ? (category.amount / totalBudget) * 100 : 0;
   });
+
+  phaseState.categories = categories;
 }
 
 function addBudgetCategory(phaseName) {
   const phase = getBudgetPhaseState(phaseName);
   if (!phase) return;
+
   const nextIndex = phase.categories.length;
-  const baseAmount = Math.max(50, Math.round(phase.budget * 0.1));
-  const totalExisting = phase.categories.reduce((sum, category) => sum + category.amount, 0);
-  const availableBudget = Math.max(0, phase.budget - totalExisting);
-  const amount = availableBudget > 0 ? Math.min(baseAmount, availableBudget) : 0;
-  phase.categories.push({ name: `Category ${nextIndex + 1}`, amount, percentage: phase.budget > 0 ? (amount / phase.budget) * 100 : 0 });
-  const totalAllocated = phase.categories.reduce((sum, category) => sum + category.amount, 0);
-  const adjustment = phase.budget - totalAllocated;
-  if (phase.categories.length && adjustment !== 0) {
-    const targetIndex = phase.categories.length > 1 ? phase.categories.length - 2 : phase.categories.length - 1;
-    phase.categories[targetIndex].amount += adjustment;
-    phase.categories[targetIndex].percentage = phase.budget > 0 ? (phase.categories[targetIndex].amount / phase.budget) * 100 : 0;
+  phase.categories.push({ name: `Category ${nextIndex + 1}`, amount: 0, percentage: 0 });
+
+  const totalBudget = Math.max(0, phase.budget);
+  if (phase.categories.length > 1) {
+    const lastIndex = phase.categories.length - 1;
+    const totalExceptLast = phase.categories.reduce((sum, category, index) => {
+      return sum + (index === lastIndex ? 0 : category.amount);
+    }, 0);
+    phase.categories[lastIndex].amount = totalBudget - totalExceptLast;
+  } else {
+    phase.categories[0].amount = totalBudget;
   }
+
+  phase.categories.forEach(category => {
+    category.percentage = totalBudget > 0 ? (category.amount / totalBudget) * 100 : 0;
+  });
+
   renderBudgetAllocation();
 }
 
 function removeBudgetCategory(phaseName, index) {
   const phase = getBudgetPhaseState(phaseName);
   if (!phase || phase.categories.length <= 1) return;
-  const removedAmount = phase.categories[index].amount;
+
   phase.categories.splice(index, 1);
   if (phase.categories.length) {
-    const otherTotal = phase.categories.reduce((sum, category) => sum + category.amount, 0);
-    const remainingBudget = Math.max(0, phase.budget - otherTotal);
-    if (remainingBudget > 0) {
-      phase.categories[phase.categories.length - 1].amount += remainingBudget;
-    }
+    const totalBudget = Math.max(0, phase.budget);
+    const lastIndex = phase.categories.length - 1;
+    const totalExceptLast = phase.categories.reduce((sum, category, index) => {
+      return sum + (index === lastIndex ? 0 : category.amount);
+    }, 0);
+    phase.categories[lastIndex].amount = totalBudget - totalExceptLast;
     phase.categories.forEach(category => {
-      category.percentage = phase.budget > 0 ? (category.amount / phase.budget) * 100 : 0;
+      category.percentage = totalBudget > 0 ? (category.amount / totalBudget) * 100 : 0;
     });
   }
   renderBudgetAllocation();
