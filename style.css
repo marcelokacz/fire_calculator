@@ -84,7 +84,29 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
 /* Results */
 .hidden { display: none !important; }
 
-.results h2 { font-size: 1rem; font-weight: 600; color: #444; }
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.results h2 { font-size: 1rem; font-weight: 600; color: #444; margin-bottom: 0; }
+
+.btn-export {
+  padding: 0.6rem 0.9rem;
+  background: #fff;
+  color: #111;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid #111;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-export:hover { background: #f2f2f2; }
 
 /* Summary */
 .summary-grid {
@@ -149,6 +171,55 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
 .phase-row .phase-range { color: #888; font-size: 0.82rem; }
 .phase-row .phase-net { font-weight: 600; }
 
+/* Yearly plan */
+.yearly-plan { margin-top: 1.5rem; }
+.yearly-plan h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.table-wrapper { overflow-x: auto; }
+.yearly-plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.yearly-plan-table th,
+.yearly-plan-table td {
+  padding: 0.65rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.yearly-plan-table th {
+  color: #666;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.yearly-plan-table tbody tr:nth-child(even) { background: #fafafa; }
+.yearly-plan-table .amount-positive { color: #1a7a4a; font-weight: 600; }
+.yearly-plan-table .amount-negative { color: #c00; font-weight: 600; }
+
 @media (max-width: 540px) {
   .grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media print {
+  body { padding: 0; background: #fff; }
+  .container { max-width: none; }
+  .card { border: none; padding: 0 0 1rem 0; margin-bottom: 0; }
+  form, .btn-calculate, .btn-export, #errorMsg { display: none !important; }
+  .results { display: block !important; }
+  .chart-wrapper { height: 260px; }
+  .yearly-plan-table { font-size: 10pt; }
+  .yearly-plan-table th,
+  .yearly-plan-table td { padding: 0.35rem 0.45rem; }
 }

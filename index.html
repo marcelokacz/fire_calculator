@@ -89,7 +89,10 @@
     </form>
 
     <section id="results" class="card results hidden">
-      <h2>Your Financial Projection</h2>
+      <div class="results-header">
+        <h2>Your Financial Projection</h2>
+        <button type="button" id="exportPdfBtn" class="btn-export">Download as PDF</button>
+      </div>
 
       <div class="summary-grid" id="summaryGrid"></div>
 
@@ -99,6 +102,22 @@
       <div id="chartLegend" class="chart-legend"></div>
 
       <div class="phases" id="phasesDetail"></div>
+
+      <div class="yearly-plan">
+        <h3>Yearly Savings Plan</h3>
+        <div class="table-wrapper">
+          <table class="yearly-plan-table">
+            <thead>
+              <tr>
+                <th scope="col">Age</th>
+                <th scope="col">Annual Savings Needed</th>
+                <th scope="col">End-of-Year Target</th>
+              </tr>
+            </thead>
+            <tbody id="yearlyPlanTableBody"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
   </div>
 
