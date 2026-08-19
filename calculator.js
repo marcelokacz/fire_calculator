@@ -257,7 +257,7 @@ function renderYearlyPlan(yearlyPlan) {
     const amountText = `${fmt(row.annualNet)}/yr`;
     return `
       <tr>
-        <td class="${amountClass}">${amountText}</td>
+        <td>${row.age}</td>
         <td>${fmt(row.endValue)}</td>
         <td class="manual-cell"></td>
       </tr>`;
