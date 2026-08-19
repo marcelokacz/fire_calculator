@@ -455,7 +455,7 @@ function renderBudgetAllocation(p) {
   if (budgetChartInstance) budgetChartInstance.destroy();
   const chartCtx = document.getElementById('budgetChart').getContext('2d');
   budgetChartInstance = new Chart(chartCtx, {
-    type: 'doughnut',
+    type: 'pie',
     data: {
       labels: phase.categories.map(category => category.name),
       datasets: [{
