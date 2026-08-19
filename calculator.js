@@ -165,23 +165,24 @@ function renderSummary(p, assets, years) {
 function renderChart(years, assets, phases) {
   const ctx = document.getElementById('projectionChart').getContext('2d');
 
+  // Colour each bar by phase
+  const barColors = years.map(age => {
+    const ph = phases.find(p => age >= p.startAge && age < p.endAge);
+    return ph ? ph.color : phases[phases.length - 1].color;
+  });
+
   if (chartInstance) chartInstance.destroy();
 
   chartInstance = new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
-      labels: years.map(y => `Age ${y}`),
+      labels: years.map(y => `${y}`),
       datasets: [{
         label: 'Portfolio Value ($)',
         data: assets,
-        borderColor: '#111',
-        backgroundColor: 'rgba(0,0,0,0.04)',
-        borderWidth: 1.5,
-        pointRadius: 2,
-        pointHoverRadius: 4,
-        pointBackgroundColor: '#111',
-        tension: 0.3,
-        fill: true,
+        backgroundColor: barColors,
+        borderWidth: 0,
+        borderRadius: 2,
       }],
     },
     options: {
@@ -191,7 +192,13 @@ function renderChart(years, assets, phases) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => ' ' + fmt(ctx.parsed.y),
+            title: items => `Age ${items[0].label}`,
+            label: item => {
+              const age = parseInt(item.label, 10);
+              const ph = phases.find(p => age >= p.startAge && age < p.endAge)
+                      || phases[phases.length - 1];
+              return ` ${ph.name}: ${fmt(item.parsed.y)}`;
+            },
           },
         },
       },
@@ -204,12 +211,20 @@ function renderChart(years, assets, phases) {
           grid: { color: 'rgba(0,0,0,0.05)' },
         },
         x: {
-          ticks: { maxTicksLimit: 12 },
+          ticks: { maxTicksLimit: 14, font: { size: 11 } },
           grid: { display: false },
         },
       },
     },
   });
+
+  // Render a simple colour legend below the chart
+  const legend = document.getElementById('chartLegend');
+  legend.innerHTML = phases.map(ph =>
+    `<span class="legend-item">
+       <span class="legend-swatch" style="background:${ph.color}"></span>${ph.name}
+     </span>`
+  ).join('');
 }
 
 function renderPhases(phases) {

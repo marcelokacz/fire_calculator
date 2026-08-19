@@ -115,8 +115,20 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
 .chart-wrapper {
   position: relative;
   height: 340px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
 }
+
+.chart-legend {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  font-size: 0.82rem;
+  color: #444;
+}
+
+.legend-item { display: flex; align-items: center; gap: 0.4rem; }
+.legend-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
 
 /* Phases */
 .phases h3 { font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
