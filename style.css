@@ -207,6 +207,7 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
 .yearly-plan-table tbody tr:nth-child(even) { background: #fafafa; }
 .yearly-plan-table .amount-positive { color: #1a7a4a; font-weight: 600; }
 .yearly-plan-table .amount-negative { color: #c00; font-weight: 600; }
+.yearly-plan-table .manual-cell { min-width: 140px; border-left: 1px dashed #ddd; }
 
 @media (max-width: 540px) {
   .grid { grid-template-columns: 1fr 1fr; }
