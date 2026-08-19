@@ -121,6 +121,8 @@ function validate(p) {
 /* ===== DOM Interactions ===== */
 
 let chartInstance = null;
+let budgetChartInstance = null;
+let budgetState = null;
 
 function getInputs() {
   const g = id => parseFloat(document.getElementById(id).value);
@@ -143,6 +145,327 @@ function getInputs() {
 
 function showError(msg) {
   document.getElementById('errorMsg').textContent = msg || '';
+}
+
+function getPhaseBudgetInfo(p, phaseName) {
+  if (phaseName === 'Retirement') {
+    return {
+      name: phaseName,
+      monthlyIncome: p.estimatedPension,
+      monthlyExpenses: p.retiredExpenses,
+      budget: p.retiredExpenses,
+    };
+  }
+  if (phaseName === 'New Career') {
+    return {
+      name: phaseName,
+      monthlyIncome: p.newCareerIncome,
+      monthlyExpenses: p.monthlyExpenses,
+      budget: p.monthlyExpenses,
+    };
+  }
+  return {
+    name: phaseName,
+    monthlyIncome: p.monthlyIncome,
+    monthlyExpenses: p.monthlyExpenses,
+    budget: p.monthlyExpenses,
+  };
+}
+
+function buildDefaultBudgetCategories(totalBudget) {
+  const templates = [
+    { name: 'Rent', share: 0.35 },
+    { name: 'Groceries', share: 0.15 },
+    { name: 'Utilities', share: 0.10 },
+    { name: 'Transportation', share: 0.10 },
+    { name: 'Other', share: 0.30 },
+  ];
+
+  const categories = templates.map(template => ({
+    name: template.name,
+    amount: Math.round(totalBudget * template.share),
+  }));
+
+  const total = categories.reduce((sum, category) => sum + category.amount, 0);
+  if (categories.length && total !== totalBudget) {
+    categories[categories.length - 1].amount += totalBudget - total;
+  }
+
+  return categories.map(category => ({
+    ...category,
+    percentage: totalBudget > 0 ? (category.amount / totalBudget) * 100 : 0,
+  }));
+}
+
+function buildBudgetState(p) {
+  const phaseNames = ['Current Career', 'New Career', 'Retirement'];
+  const phases = phaseNames.reduce((acc, phaseName) => {
+    const info = getPhaseBudgetInfo(p, phaseName);
+    acc[phaseName] = {
+      budget: info.budget,
+      monthlyIncome: info.monthlyIncome,
+      monthlyExpenses: info.monthlyExpenses,
+      categories: buildDefaultBudgetCategories(info.budget),
+    };
+    return acc;
+  }, {});
+
+  return {
+    selectedPhase: 'Current Career',
+    phases,
+  };
+}
+
+function getBudgetPhaseState(phaseName) {
+  if (!budgetState || !budgetState.phases[phaseName]) return null;
+  return budgetState.phases[phaseName];
+}
+
+function getBudgetPhaseSummary(phaseName) {
+  const phase = getBudgetPhaseState(phaseName);
+  if (!phase) return null;
+
+  const categoryTotal = phase.categories.reduce((sum, category) => sum + category.amount, 0);
+  const monthlyIncome = Number.isFinite(phase.monthlyIncome) ? phase.monthlyIncome : 0;
+  const savingsAmount = monthlyIncome - phase.budget;
+  const lastCategory = phase.categories[phase.categories.length - 1];
+  const lastCategoryWarning = lastCategory && lastCategory.amount < 0
+    ? 'The last category would need to go negative to stay within budget.'
+    : '';
+  const warning = lastCategoryWarning || (categoryTotal > phase.budget
+    ? 'Category totals exceed the available budget.'
+    : savingsAmount < 0
+      ? 'This phase is spending more than its monthly income.'
+      : '');
+
+  return { phase, categoryTotal, savingsAmount, warning };
+}
+
+function syncCategoriesToBudget(phaseState, changedIndex, field, value) {
+  const totalBudget = Math.max(0, phaseState.budget);
+  if (!phaseState.categories.length) return;
+
+  if (field === 'name') {
+    phaseState.categories[changedIndex].name = value || 'Category';
+    return;
+  }
+
+  const categories = phaseState.categories.map(category => ({ ...category }));
+  const changedCategory = categories[changedIndex];
+  if (!changedCategory) return;
+
+  if (field === 'amount') {
+    changedCategory.amount = Math.max(0, Math.round(value));
+  } else {
+    const nextPercent = Math.max(0, parseFloat(value));
+    changedCategory.amount = Number.isFinite(nextPercent)
+      ? Math.round(totalBudget * (nextPercent / 100))
+      : 0;
+  }
+
+  if (categories.length > 1) {
+    const lastIndex = categories.length - 1;
+    const totalExceptLast = categories.reduce((sum, category, index) => {
+      return sum + (index === lastIndex ? 0 : category.amount);
+    }, 0);
+    categories[lastIndex].amount = totalBudget - totalExceptLast;
+  } else {
+    categories[0].amount = totalBudget;
+  }
+
+  categories.forEach(category => {
+    category.percentage = totalBudget > 0 ? (category.amount / totalBudget) * 100 : 0;
+  });
+
+  phaseState.categories = categories;
+}
+
+function addBudgetCategory(phaseName) {
+  const phase = getBudgetPhaseState(phaseName);
+  if (!phase) return;
+
+  const nextIndex = phase.categories.length;
+  phase.categories.push({ name: `Category ${nextIndex + 1}`, amount: 0, percentage: 0 });
+
+  const totalBudget = Math.max(0, phase.budget);
+  if (phase.categories.length > 1) {
+    const lastIndex = phase.categories.length - 1;
+    const totalExceptLast = phase.categories.reduce((sum, category, index) => {
+      return sum + (index === lastIndex ? 0 : category.amount);
+    }, 0);
+    phase.categories[lastIndex].amount = totalBudget - totalExceptLast;
+  } else {
+    phase.categories[0].amount = totalBudget;
+  }
+
+  phase.categories.forEach(category => {
+    category.percentage = totalBudget > 0 ? (category.amount / totalBudget) * 100 : 0;
+  });
+
+  renderBudgetAllocation();
+}
+
+function removeBudgetCategory(phaseName, index) {
+  const phase = getBudgetPhaseState(phaseName);
+  if (!phase || phase.categories.length <= 1) return;
+
+  phase.categories.splice(index, 1);
+  if (phase.categories.length) {
+    const totalBudget = Math.max(0, phase.budget);
+    const lastIndex = phase.categories.length - 1;
+    const totalExceptLast = phase.categories.reduce((sum, category, index) => {
+      return sum + (index === lastIndex ? 0 : category.amount);
+    }, 0);
+    phase.categories[lastIndex].amount = totalBudget - totalExceptLast;
+    phase.categories.forEach(category => {
+      category.percentage = totalBudget > 0 ? (category.amount / totalBudget) * 100 : 0;
+    });
+  }
+  renderBudgetAllocation();
+}
+
+function getBudgetChartColors(count) {
+  const palette = ['#3182ce', '#d69e2e', '#38a169', '#805ad5', '#e53e3e', '#4a5568', '#0f766e', '#b45309'];
+  return Array.from({ length: count }, (_, index) => palette[index % palette.length]);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function syncBudgetStateToInputs(p) {
+  const nextState = buildBudgetState(p);
+  if (!budgetState) return nextState;
+
+  Object.keys(nextState.phases).forEach(phaseName => {
+    const previousPhase = budgetState.phases[phaseName];
+    const nextPhase = nextState.phases[phaseName];
+    if (!previousPhase || !previousPhase.categories.length) return;
+
+    const categories = previousPhase.categories.map(category => ({ ...category }));
+    const totalBudget = nextPhase.budget;
+    const totalExisting = categories.reduce((sum, category) => sum + category.amount, 0);
+
+    if (totalBudget <= 0) {
+      nextPhase.categories = categories.map(category => ({ ...category, amount: 0, percentage: 0 }));
+      return;
+    }
+
+    if (totalExisting <= 0) {
+      nextPhase.categories = buildDefaultBudgetCategories(totalBudget);
+      return;
+    }
+
+    const scale = totalBudget / totalExisting;
+    categories.forEach(category => {
+      category.amount = Math.max(0, Math.round(category.amount * scale));
+      category.percentage = (category.amount / totalBudget) * 100;
+    });
+
+    const adjustedTotal = categories.reduce((sum, category) => sum + category.amount, 0);
+    categories[categories.length - 1].amount += totalBudget - adjustedTotal;
+    categories[categories.length - 1].percentage = (categories[categories.length - 1].amount / totalBudget) * 100;
+    nextPhase.categories = categories;
+  });
+
+  nextState.selectedPhase = budgetState.selectedPhase || 'Current Career';
+  return nextState;
+}
+
+function renderBudgetAllocation(p) {
+  if (!budgetState) {
+    if (!p) return;
+    budgetState = buildBudgetState(p);
+  }
+
+  const select = document.getElementById('budgetPhaseSelect');
+  const phaseNames = Object.keys(budgetState.phases);
+  select.innerHTML = phaseNames.map(phaseName => `<option value="${escapeHtml(phaseName)}"${phaseName === budgetState.selectedPhase ? ' selected' : ''}>${escapeHtml(phaseName)}</option>`).join('');
+
+  const phaseName = select.value || budgetState.selectedPhase;
+  budgetState.selectedPhase = phaseName;
+  const summary = getBudgetPhaseSummary(phaseName);
+  if (!summary) return;
+
+  const { phase, categoryTotal, savingsAmount, warning } = summary;
+  const rows = phase.categories.map((category, index) => `
+    <div class="budget-category-row" data-index="${index}">
+      <input class="budget-name-input" type="text" value="${escapeHtml(category.name)}" data-field="name" />
+      <input class="budget-amount-input" type="number" min="0" step="1" value="${Math.round(category.amount)}" data-field="amount" />
+      <input class="budget-percent-input" type="number" min="0" max="100" step="0.1" value="${category.percentage.toFixed(1)}" data-field="percent" />
+      <button type="button" class="btn-remove-category" data-index="${index}">Remove</button>
+    </div>`).join('');
+
+  document.getElementById('budgetCategoryRows').innerHTML = rows;
+  document.getElementById('budgetSavingsAmount').textContent = fmt(savingsAmount);
+  const warningEl = document.getElementById('budgetWarning');
+  warningEl.textContent = warning;
+  warningEl.classList.toggle('hidden', !warning);
+
+  if (budgetChartInstance) budgetChartInstance.destroy();
+  const chartCtx = document.getElementById('budgetChart').getContext('2d');
+  const chartLabels = phase.categories.map(category => category.name);
+  const chartData = phase.categories.map(category => Math.max(0, category.amount));
+  const chartColors = getBudgetChartColors(phase.categories.length);
+  const chartSavingsAmount = Math.max(0, phase.monthlyIncome - phase.budget);
+
+  if (chartSavingsAmount > 0) {
+    chartLabels.push('Savings');
+    chartData.push(chartSavingsAmount);
+    chartColors.push('#38a169');
+  }
+
+  budgetChartInstance = new Chart(chartCtx, {
+    type: 'pie',
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        data: chartData,
+        backgroundColor: chartColors,
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: item => `${item.label}: ${fmt(item.parsed)}` } },
+      },
+    },
+  });
+}
+
+function handleBudgetPhaseChange(event) {
+  if (!budgetState) return;
+  budgetState.selectedPhase = event.target.value;
+  renderBudgetAllocation();
+}
+
+function handleBudgetCategoryInput(event) {
+  if (!budgetState) return;
+  const row = event.target.closest('.budget-category-row');
+  if (!row) return;
+  const phaseName = budgetState.selectedPhase;
+  const phase = getBudgetPhaseState(phaseName);
+  if (!phase) return;
+  const index = parseInt(row.dataset.index, 10);
+  const field = event.target.dataset.field;
+  const value = event.target.value;
+  syncCategoriesToBudget(phase, index, field, value);
+  renderBudgetAllocation();
+}
+
+function handleBudgetCategoryClick(event) {
+  if (!budgetState || !event.target.classList.contains('btn-remove-category')) return;
+  const phaseName = budgetState.selectedPhase;
+  const index = parseInt(event.target.dataset.index, 10);
+  removeBudgetCategory(phaseName, index);
 }
 
 function renderSummary(p, assets, years) {
@@ -250,6 +573,13 @@ function renderPhases(phases) {
   container.innerHTML = `<h3>Phase Breakdown</h3>${rows.join('')}`;
 }
 
+document.getElementById('budgetPhaseSelect').addEventListener('change', handleBudgetPhaseChange);
+document.getElementById('addBudgetCategoryBtn').addEventListener('click', function () {
+  addBudgetCategory(budgetState ? budgetState.selectedPhase : 'Current Career');
+});
+document.getElementById('budgetCategoryRows').addEventListener('change', handleBudgetCategoryInput);
+document.getElementById('budgetCategoryRows').addEventListener('click', handleBudgetCategoryClick);
+
 function renderYearlyPlan(yearlyPlan) {
   const body = document.getElementById('yearlyPlanTableBody');
   body.innerHTML = yearlyPlan.map(row => {
@@ -282,6 +612,8 @@ document.getElementById('fireForm').addEventListener('submit', function (e) {
   renderSummary(p, assets, years);
   renderChart(years, assets, phases);
   renderPhases(phases);
+  budgetState = syncBudgetStateToInputs(p);
+  renderBudgetAllocation(p);
   renderYearlyPlan(yearlyPlan);
 
   resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });

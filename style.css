@@ -152,6 +152,132 @@ header .subtitle { margin-top: 0.2rem; color: #666; font-size: 0.95rem; }
 .legend-item { display: flex; align-items: center; gap: 0.4rem; }
 .legend-swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
 
+/* Budget allocation */
+.budget-section {
+  margin-top: 1.5rem;
+}
+
+.budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.budget-header h3 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.phase-select {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.phase-select select {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.budget-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.budget-chart-wrapper {
+  position: relative;
+  height: 240px;
+  min-width: 0;
+}
+
+.budget-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.budget-category-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.budget-category-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 0.7fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.budget-category-row input {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.btn-add-category,
+.btn-remove-category {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid #111;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.btn-add-category:hover,
+.btn-remove-category:hover {
+  background: #f2f2f2;
+}
+
+.budget-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.25rem;
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .budget-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.budget-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.budget-warning {
+  color: #c00;
+  font-size: 0.82rem;
+}
+
 /* Phases */
 .phases h3 { font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
 
