@@ -103,6 +103,32 @@
 
       <div class="phases" id="phasesDetail"></div>
 
+      <div class="budget-section card budget-card">
+        <div class="budget-header">
+          <h3>Budget Allocation</h3>
+          <label class="phase-select">
+            <span>Phase</span>
+            <select id="budgetPhaseSelect"></select>
+          </label>
+        </div>
+        <div class="budget-layout">
+          <div class="budget-chart-wrapper">
+            <canvas id="budgetChart" aria-label="Phase budget allocation chart"></canvas>
+          </div>
+          <div class="budget-editor">
+            <div id="budgetCategoryRows" class="budget-category-rows"></div>
+            <button type="button" id="addBudgetCategoryBtn" class="btn-add-category">Add Category</button>
+            <div class="budget-summary">
+              <div class="budget-summary-row">
+                <span>Savings (auto)</span>
+                <strong id="budgetSavingsAmount"></strong>
+              </div>
+              <div id="budgetWarning" class="budget-warning hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="yearly-plan">
         <h3>Yearly Savings Plan</h3>
         <div class="table-wrapper">
