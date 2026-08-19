@@ -37,6 +37,7 @@ function project(p) {
 
   const years  = [];
   const assets = [];
+  const yearlyPlan = [];
 
   let portfolio = p.currentInvested;
 
@@ -44,9 +45,6 @@ function project(p) {
   const phases = buildPhases(p);
 
   for (let age = p.currentAge; age < p.lifeExpectancy; age++) {
-    years.push(age);
-    assets.push(Math.round(portfolio));
-
     const phase = phases.find(ph => age >= ph.startAge && age < ph.endAge);
     if (!phase) break;
 
@@ -57,13 +55,21 @@ function project(p) {
 
     // Grow portfolio for one year then add/subtract net cash flow
     portfolio = portfolio * (1 + realRate) + annualNet;
+
+    years.push(age);
+    assets.push(Math.round(portfolio));
+    yearlyPlan.push({
+      age,
+      annualNet,
+      endValue: Math.round(portfolio),
+    });
   }
 
   // Final data point after last year of growth
   years.push(p.lifeExpectancy);
   assets.push(Math.round(portfolio));
 
-  return { years, assets, phases };
+  return { years, assets, phases, yearlyPlan };
 }
 
 /**
@@ -244,6 +250,20 @@ function renderPhases(phases) {
   container.innerHTML = `<h3>Phase Breakdown</h3>${rows.join('')}`;
 }
 
+function renderYearlyPlan(yearlyPlan) {
+  const body = document.getElementById('yearlyPlanTableBody');
+  body.innerHTML = yearlyPlan.map(row => {
+    const amountClass = row.annualNet >= 0 ? 'amount-positive' : 'amount-negative';
+    const amountText = `${fmt(row.annualNet)}/yr`;
+    return `
+      <tr>
+        <td>${row.age}</td>
+        <td>${fmt(row.endValue)}</td>
+        <td class="manual-cell"></td>
+      </tr>`;
+  }).join('');
+}
+
 /* ===== Main ===== */
 
 document.getElementById('fireForm').addEventListener('submit', function (e) {
@@ -254,7 +274,7 @@ document.getElementById('fireForm').addEventListener('submit', function (e) {
   const err = validate(p);
   if (err) { showError(err); return; }
 
-  const { years, assets, phases } = project(p);
+  const { years, assets, phases, yearlyPlan } = project(p);
 
   const resultsEl = document.getElementById('results');
   resultsEl.classList.remove('hidden');
@@ -262,6 +282,11 @@ document.getElementById('fireForm').addEventListener('submit', function (e) {
   renderSummary(p, assets, years);
   renderChart(years, assets, phases);
   renderPhases(phases);
+  renderYearlyPlan(yearlyPlan);
 
   resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+document.getElementById('exportPdfBtn').addEventListener('click', function () {
+  window.print();
 });
