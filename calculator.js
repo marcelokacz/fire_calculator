@@ -43,7 +43,7 @@ function project(p) {
   // Determine phases
   const phases = buildPhases(p);
 
-  for (let age = p.currentAge; age <= p.lifeExpectancy; age++) {
+  for (let age = p.currentAge; age < p.lifeExpectancy; age++) {
     years.push(age);
     assets.push(Math.round(portfolio));
 
@@ -59,7 +59,7 @@ function project(p) {
     portfolio = portfolio * (1 + realRate) + annualNet;
   }
 
-  // Last data point (lifeExpectancy age)
+  // Final data point after last year of growth
   years.push(p.lifeExpectancy);
   assets.push(Math.round(portfolio));
 
@@ -107,8 +107,6 @@ function validate(p) {
     return 'Retirement age must be greater than career switch age.';
   if (p.retirementAge >= p.lifeExpectancy)
     return 'Life expectancy must be greater than retirement age.';
-  if (p.monthlyExpenses > p.monthlyIncome * 2)
-    return 'Monthly expenses seem very high. Please double-check.';
   if (p.expectedReturn <= 0)
     return 'Expected return must be greater than 0%.';
   return null;
