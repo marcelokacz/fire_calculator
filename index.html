@@ -20,13 +20,13 @@
       const script = document.createElement('script');
       script.async = true;
       script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(analyticsId)}`;
+      script.onload = function () {
+        gtag('js', new Date());
+        gtag('config', analyticsId, {
+          send_page_view: true
+        });
+      };
       document.head.appendChild(script);
-
-      gtag('js', new Date());
-      gtag('config', analyticsId, {
-        anonymize_ip: true,
-        send_page_view: true
-      });
     })();
   </script>
 </head>
