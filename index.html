@@ -3,8 +3,32 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="google-analytics-id" content="G-XXXXXXXXXX" />
   <title>FIRE Calculator — Switching Careers</title>
   <link rel="stylesheet" href="style.css" />
+  <script>
+    (function () {
+      const analyticsId = document.querySelector('meta[name="google-analytics-id"]')?.content?.trim();
+      if (!analyticsId || analyticsId === 'G-XXXXXXXXXX') return;
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        window.dataLayer.push(arguments);
+      }
+      window.gtag = gtag;
+
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(analyticsId)}`;
+      document.head.appendChild(script);
+
+      gtag('js', new Date());
+      gtag('config', analyticsId, {
+        anonymize_ip: true,
+        send_page_view: true
+      });
+    })();
+  </script>
 </head>
 <body>
   <div class="container">
